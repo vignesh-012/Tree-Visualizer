@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tree Visualizer</title>
+<style>
+:root {
+  --bg-color: #0b0c10;
+  --card-bg: #141622;
+  --panel-bg: #10121a;
+  --text-main: #e2e8f0;
+  --text-muted: #718096;
+  
+  /* Mode Specific Theme Accents (Softer, reduced opacity glow) */
+  --theme-glow: 0 0 10px rgba(102, 126, 234, 0.3);
+  --theme-color: #5a67d8;
+}
+
+/* Dynamic Theme Overrides applied via JS (Muted Neon variants) */
+body.theme-BT {
+  --theme-color: #d53f8c;
+  --theme-glow: 0 0 12px rgba(213, 63, 140, 0.4);
+}
+body.theme-BST {
+  --theme-color: #319795;
+  --theme-glow: 0 0 12px rgba(49, 151, 149, 0.4);
+}
+body.theme-AVL {
+  --theme-color: #38a169;
+  --theme-glow: 0 0 12px rgba(56, 161, 105, 0.4);
+}
+
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-main);
+  transition: background 0.4s ease;
+}
+
+header {
+  background: #141622;
+  border-bottom: 2px solid var(--theme-color);
+  box-shadow: var(--theme-glow);
+  padding: 20px;
+  position: relative;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: var(--theme-glow);
+  text-align: center;
+}
+
+.top-home-btn {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 14px;
+  margin: 0;
+  border: 1px solid #4a5568;
+  color: #a0aec0;
+  background: transparent;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.top-home-btn:hover {
+  background: #4a5568;
+  box-shadow: 0 0 10px rgba(74, 85, 104, 0.4);
+  color: #fff;
+}
+
+#home, #app {
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h2 {
+  text-align: center;
+  color: var(--text-main);
+  margin-bottom: 35px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.cards {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 35px 25px;
+  border-radius: 16px;
+  width: 250px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #23273a;
+}
+
+.card-bt { border-top: 4px solid #d53f8c; }
+.card-bst { border-top: 4px solid #319795; }
+.card-avl { border-top: 4px solid #38a169; }
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+}
+
+.card h3 {
+  margin-top: 0;
+  font-size: 1.35rem;
+  color: var(--text-main);
+}
+
+.card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+button {
+  padding: 10px 18px;
+  margin: 6px;
+  cursor: pointer;
+  border: 1px solid var(--theme-color);
+  border-radius: 8px;
+  font-weight: 600;
+  color: #edf2f7;
+  background: transparent;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+button:hover {
+  background: var(--theme-color);
+  box-shadow: var(--theme-glow);
+  color: #fff;
+}
+
+input[type="number"] {
+  padding: 10px;
+  background: #1a1d2e;
+  border: 2px solid #23273a;
+  border-radius: 8px;
+  outline: none;
+  font-size: 0.95rem;
+  color: #fff;
+  width: 120px;
+  text-align: center;
+  transition: border-color 0.3s;
+}
+
+input[type="number"]:focus {
+  border-color: var(--theme-color);
+}
+
+canvas {
+  background: #05060b;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  display: block;
+  margin: 30px auto;
+  max-width: 100%;
+  border: 1px solid #1a1d2e;
+}
+
+.controls {
+  background: var(--panel-bg);
+  padding: 25px;
+  border-radius: 16px;
+  border: 1px solid #1a1d2e;
+  text-align: center;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#output {
+  margin-top: 20px;
+  padding: 15px;
+  background: #141622;
+  border-radius: 10px;
+  border-left: 4px solid var(--theme-color);
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-main);
+  min-height: 24px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Tree Visualizer 🌲</h1>
+  <button id="navHomeBtn" class="top-home-btn hidden" onclick="goHome()">🏠 Home</button>
+</header>
+
+<div id="home">
+  <h2>Select a tree you want to visualize</h2>
+  <div class="cards">
+    <div class="card card-bt">
+      <h3>Binary Tree</h3>
+      <p>Standard Level-by-Level Growth Architecture</p>
+      <button onclick="openTree('BT')">Initialize ⚡</button>
+    </div>
+    <div class="card card-bst">
+      <h3>Binary Search Tree</h3>
+      <p>Sorted Order-Dependent Left/Right Framework</p>
+      <button onclick="openTree('BST')">Initialize ⚡</button>
+    </div>
+    <div class="card card-avl">
+      <h3>AVL Tree</h3>
+      <p>Self-Balancing Rotational Matrix Engine</p>
+      <button onclick="openTree('AVL')">Initialize ⚡</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="controls">
+    <h2 id="title" style="display:inline-block; margin: 0 20px; vertical-align: middle;"></h2>
+    <input type="number" id="val" placeholder="Data Value">
+    <button onclick="insertValue()">📥 Insert Node</button>
+    <button onclick="searchValue()">🔍 Search Matrix</button>
+    <hr style="border:0; border-top:1px solid #1a1d2e; margin:20px 0;">
+    <button onclick="inorder()">🔄 Inorder</button>
+    <button onclick="preorder()">🔄 Preorder</button>
+    <button onclick="postorder()">🔄 Postorder</button>
+    <button onclick="levelOrderTraversal()">🛸 Level Order</button>
+  </div>
+
+  <div id="output">System initialized. Awaiting binary data input strings...</div>
+  <canvas id="canvas" width="1200" height="550"></canvas>
+</div>
+
+<script>
+let mode = "BST";
+
+class Node {
+  constructor(v) {
+    this.v = v;
+    this.left = null;
+    this.right = null;
+    this.h = 1;
+  }
+}
+
+let root = null;
+
+// Toned-down subtle palettes for different levels
+const themes = {
+  "BT": {
+    edges: "#3a1c28",
+    nodes: ["#b8325a", "#c9426b", "#da557d", "#eb678f", "#fc7aa2"]
+  },
+  "BST": {
+    edges: "#143537",
+    nodes: ["#2c7a7b", "#319795", "#4db6ac", "#80cbc4", "#b2dfdb"]
+  },
+  "AVL": {
+    edges: "#1c3d22",
+    nodes: ["#2f855a", "#38a169", "#48bb78", "#68d391", "#9ae6b4"]
+  }
+};
+
+function openTree(type) {
+  mode = type;
+  root = null;
+  
+  document.body.className = "";
+  document.body.classList.add("theme-" + type);
+  
+  let emoji = type === "BT" ? "🌲" : type === "BST" ? "🌴" : "🌵";
+  
+  document.getElementById("output").innerText = `${type} Mode Active. Node matrix empty.`;
+  document.getElementById("home").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+  document.getElementById("navHomeBtn").classList.remove("hidden");
+  document.getElementById("title").innerText = `${emoji} ${type} Matrix Engine`;
+  draw();
+}
+
+function goHome() {
+  document.body.className = "";
+  document.getElementById("app").classList.add("hidden");
+  document.getElementById("navHomeBtn").classList.add("hidden");
+  document.getElementById("home").classList.remove("hidden");
+}
+
+function height(n) { return n ? n.h : 0; }
+function update(n) { if (n) n.h = 1 + Math.max(height(n.left), height(n.right)); }
+function bal(n) { return n ? height(n.left) - height(n.right) : 0; }
+
+function rightRotate(y) {
+  let x = y.left, T = x.right;
+  x.right = y; y.left = T;
+  update(y); update(x);
+  return x;
+}
+
+function leftRotate(x) {
+  let y = x.right, T = y.left;
+  y.left = x; x.right = T;
+  update(x); update(y);
+  return y;
+}
+
+function avlInsert(node, key) {
+  if (!node) return new Node(key);
+  if (key < node.v) node.left = avlInsert(node.left, key);
+  else if (key > node.v) node.right = avlInsert(node.right, key);
+  else return node;
+
+  update(node);
+  let b = bal(node);
+
+  if (b > 1 && key < node.left.v) return rightRotate(node);
+  if (b <-1 && key > node.right.v) return leftRotate(node);
+  if (b > 1 && key > node.left.v) {
+    node.left = leftRotate(node.left);
+    return rightRotate(node);
+  }
+  if (b <-1 && key < node.right.v) {
+    node.right = rightRotate(node.right);
+    return leftRotate(node);
+  }
+  return node;
+}
+
+function bstInsert(node, key) {
+  if (!node) return new Node(key);
+  if (key < node.v) node.left = bstInsert(node.left, key);
+  else if (key > node.v) node.right = bstInsert(node.right, key);
+  return node;
+}
+
+function btInsert(value) {
+  let n = new Node(value);
+  if (!root) { root = n; return; }
+  let q = [root];
+  while (q.length) {
+    let cur = q.shift();
+    if (!cur.left) { cur.left = n; return; }
+    else q.push(cur.left);
+    if (!cur.right) { cur.right = n; return; }
+    else q.push(cur.right);
+  }
+}
+
+function insertValue() {
+  let inputElem = document.getElementById("val");
+  let v = parseInt(inputElem.value);
+  if (isNaN(v)) return;
+
+  if (mode === "BT") btInsert(v);
+  else if (mode === "BST") root = bstInsert(root, v);
+  else root = avlInsert(root, v);
+
+  inputElem.value = "";
+  document.getElementById("output").innerText = "📥 Node injected successfully: " + v;
+  draw();
+}
+
+function searchValue() {
+  let v = parseInt(document.getElementById("val").value);
+  if (isNaN(v)) return;
+  let cur = root, found = false;
+
+  if (mode === "BT") {
+    let q = root ? [root] : [];
+    while (q.length) {
+      let n = q.shift();
+      if (n.v === v) { found = true; break; }
+      if (n.left) q.push(n.left);
+      if (n.right) q.push(n.right);
+    }
+  } else {
+    while (cur) {
+      if (cur.v === v) { found = true; break; }
+      if (v < cur.v) cur = cur.left;
+      else cur = cur.right;
+    }
+  }
+  document.getElementById("output").innerText = found ? `🎯 Target Matrix Node ${v} Found!` : `🚨 Target Matrix Node ${v} Missing`;
+}
+
+function ino(n, r) { if (n) { ino(n.left, r); r.push(n.v); ino(n.right, r); } }
+function pre(n, r) { if (n) { r.push(n.v); pre(n.left, r); pre(n.right, r); } }
+function post(n, r) { if (n) { post(n.left, r); post(n.right, r); r.push(n.v); } }
+
+function inorder() { let r = []; ino(root, r); show(r, "🍁 Inorder Stream"); }
+function preorder() { let r = []; pre(root, r); show(r, "🌿 Preorder Stream"); }
+function postorder() { let r = []; post(root, r); show(r, "🍂 Postorder Stream"); }
+
+function levelOrderTraversal() {
+  let r = [];
+  if (!root) { show(r, "🛸 Level Order Stream"); return; }
+  let q = [root];
+  while (q.length) {
+    let n = q.shift();
+    r.push(n.v);
+    if (n.left) q.push(n.left);
+    if (n.right) q.push(n.right);
+  }
+  show(r, "🛸 Level Order Stream");
+}
+
+function show(r, t) {
+  if (r.length === 0) {
+    document.getElementById("output").innerText = t + ": Architectural structure empty.";
+  } else {
+    document.getElementById("output").innerText = t + ": " + r.join(" ➔ ");
+  }
+}
+
+function draw() {
+  let c = document.getElementById("canvas");
+  let ctx = c.getContext("2d");
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  if (!root) return;
+
+  let currentTheme = themes[mode];
+
+  function dfs(node, x, y, gap, depth) {
+    if (!node) return;
+
+    let colorList = currentTheme.nodes;
+    let colorIndex = Math.min(depth, colorList.length - 1);
+    let neonColor = colorList[colorIndex];
+
+    if (node.left) {
+      ctx.beginPath();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = currentTheme.edges;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - gap, y + 85);
+      ctx.stroke();
+      dfs(node.left, x - gap, y + 85, gap / 1.9, depth + 1);
+    }
+
+    if (node.right) {
+      ctx.beginPath();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = currentTheme.edges;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + gap, y + 85);
+      ctx.stroke();
+      dfs(node.right, x + gap, y + 85, gap / 1.9, depth + 1);
+    }
+
+    // Toned down glow spread radius
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = neonColor;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 21, 0, 2 * Math.PI);
+    ctx.fillStyle = "#0f111a";
+    ctx.fill();
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = neonColor;
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "bold 13px 'Courier New', Courier, monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(node.v, x, y);
+  }
+
+  dfs(root, c.width / 2, 55, 240, 0);
+}
+</script>
+</body>
+</html>
